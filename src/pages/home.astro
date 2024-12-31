@@ -1,27 +1,105 @@
 ---
-import { app } from "../firebase/server";
-import { getAuth } from "firebase-admin/auth";
+import { db, admin } from "../firebase/server";
+//import admin from 'firebase-admin';
+//import { app as clientApp } from "../firebase/client";
+//import { getAuth } from "firebase-admin/auth";
+//import { getDatabase as admin, ref } from "firebase-admin/database";
 import Layout from "../layouts/Layout.astro";
+import Header from "../components/Header.astro";
+//import { auth } from "firebase-admin";
+//import { getAuth, onAuthStateChanged } from "firebase/auth";
+//import { app } from "../firebase/client";
+//import { getDatabase, ref, onValue, get } from "firebase/database";
 
-const auth = getAuth(app);
+export const prerender = false;
+
+//const auth = getAuth();
+//const user = auth.currentUser;
+const auth = admin.auth();
 
 /* Check current session */
 if (!Astro.cookies.has("__session")) {
   return Astro.redirect("/signin");
 }
-const sessionCookie = Astro.cookies.get("__session")?.value || '';
+const sessionCookie = Astro.cookies.get("__session")?.value || "";
 const decodedCookie = await auth.verifySessionCookie(sessionCookie);
 const user = await auth.getUser(decodedCookie.uid);
 
 if (!user) {
   return Astro.redirect("/signin");
 }
+
+console.log("Fetching data");
+/* const starCountRef = dbs.ref("control/Henry/2022/7");
+starCountRef.once("value", function (snapshot: any) {
+  //data = snapshot.val();
+  //console.log(data);
+}); */
+
+const snapshot = await db.ref("control/Henry/2022/7").once("value");
+const data = snapshot.val();
 ---
 
-<Layout title="dashboard">
+<Layout title="home">
+  <script>
+    /* import { app } from "../firebase/client";
+    import { getDatabase, ref, onValue } from "firebase/database";
+    //auth.setPersistence(inMemoryPersistence)
+
+    /* onAuthStateChanged(auth, (user) => {
+      if (user) {
+        console.log(user.displayName);
+        currentUser = user;
+        const header = document.querySelector("h1");
+        if (header && currentUser) {
+          header.textContent = `Welcome ${currentUser.displayName}`;
+        }
+      } else {
+        console.log("No user");
+        return Astro.redirect("/signin");
+      }
+    }); */
+
+    /* const db = getDatabase(app);
+    const starCountRef = ref(db, "/control/Henry/2022/7");
+    //console.log(starCountRef);
+    onValue(starCountRef, (snapshot) => {
+      const data = snapshot.val();
+      console.log(data);
+    }); */
+  </script>
+  <Header />
   <h1>Welcome {user.displayName}</h1>
-  <p>We are happy to see you here</p>
+  <p>Information</p>
   <form action="/api/auth/signout">
     <button type="submit">Sign out</button>
   </form>
+  <div class="overflow-x-auto mt-6">
+    <table class="min-w-full table-auto border-collapse border border-gray-300">
+      <thead class="bg-gray-100 sticky top-0">
+        <tr>
+          <th class="border border-gray-300 px-4 py-2">Day</th>
+          <th class="border border-gray-300 px-4 py-2">Studies</th>
+          <th class="border border-gray-300 px-4 py-2">Hours</th>
+        </tr>
+      </thead>
+      <tbody>
+        {
+          Object.entries(data).map(([key, value]) => (
+            <tr key={key}>
+              <td class="border border-gray-300 px-4 py-2">{key}</td>
+              <td class="border border-gray-300 px-4 py-2">{value.est}</td>
+              <td class="border border-gray-300 px-4 py-2">{value.horas}</td>
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
 </Layout>
+<style>
+  .table-container {
+    overflow-y: auto;
+    max-height: 400px;
+  }
+</style>
